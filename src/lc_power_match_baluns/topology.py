@@ -1,0 +1,411 @@
+"""This file is part of lc-power-match-baluns.
+Copyright © 2023 Technical University of Denmark (developed by Rasmus Jepsen)
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
+This module encapsulates the functionality of LC-balun topologies.
+"""
+
+import lcapy
+import sympy
+import lc_power_match_baluns.oneport
+from collections import abc
+import math
+
+class BalunTopology:
+  """A power matching LC-balun topology"""
+
+  name: str = ""
+
+  netlist: str = ""
+
+  num_elements: int = 0
+
+  _two_port_x_params_func = None
+  _three_port_z_params_func = None
+
+  @classmethod
+  def calculate_two_port_reactance_parameters(cls,
+      element_reactances: abc.Sequence[float]) -> tuple[float, float, float]:
+    """Calculates two-port reactance parameters from element reactances
+
+    Args:
+        element_reactances (abc.Sequence[float]): The reactances of each element
+
+    Raises:
+        NotImplementedError: If the topology has not implemented this method
+
+    Returns:
+        tuple[float, float, float]: The reactance parameters (x11, x12, x22)
+    """
+    if cls._two_port_x_params_func is None:
+      num_elements = len(element_reactances)
+      circuit = cls.lcapy_circuit()
+      impedance_symbols = [lcapy.symbol(f"Z{i + 1}").sympy for i in range(num_elements)]
+      reactance_symbols = [sympy.Symbol(f"X{i + 1}") for i in range(num_elements)]
+      impedance_subs = [(impedance_symbols[i], lcapy.j * reactance_symbols[i]) for i in range(num_elements)]
+      z_params = circuit.Zparamsn("1_0", "3_0", "2_0", 0).sympy.subs(impedance_subs)
+      x_params = sympy.Matrix([sympy.im(z_params[0, 0]), sympy.im(z_params[0, 1]), sympy.im(z_params[1, 1])])
+      cls._two_port_x_params_func = sympy.lambdify([tuple(reactance_symbols)], x_params)
+    result = cls._two_port_x_params_func(element_reactances) # pylint: disable=not-callable
+    return tuple(map(tuple, result.T))[0] # type: ignore [return-value]
+
+  @classmethod
+  def calculate_three_port_impedance_parameters(cls,
+      element_reactances: abc.Sequence[float]):
+    """Calculates three-port impedance parameters from element reactances
+
+    Args:
+        element_reactances (abc.Sequence[float]): The reactances of each element
+
+    Raises:
+        NotImplementedError: If the topology has not implemented this method
+
+    Returns:
+        The z parameters
+    """
+    if cls._three_port_z_params_func is None:
+      num_elements = len(element_reactances)
+      circuit = cls.lcapy_circuit()
+      impedance_symbols = [lcapy.symbol(f"Z{i + 1}").sympy for i in range(num_elements)]
+      reactance_symbols = [sympy.Symbol(f"X{i + 1}") for i in range(num_elements)]
+      impedance_subs = [(impedance_symbols[i], lcapy.j * reactance_symbols[i]) for i in range(num_elements)]
+      z_params = circuit.Zparamsn("2_0", 0, "1_0", 0, "3_0", 0).sympy.subs(impedance_subs)
+      cls._three_port_z_params_func = sympy.lambdify([tuple(reactance_symbols)], z_params)
+    result = cls._three_port_z_params_func(element_reactances) # pylint: disable=not-callable
+    return result # type: ignore [return-value]
+
+  @classmethod
+  def lcapy_circuit(cls) -> lcapy.Circuit:
+    """Creates an Lcapy circuit form of this topology from its netlist.
+
+    The circuit form uses generalized impedance elements for each element.
+
+    Returns:
+        lcapy.Circuit: The Lcapy circuit form
+    """
+    return lcapy.Circuit(cls.netlist)
+
+  @classmethod
+  def lc_netlist(cls, components: abc.Sequence[lc_power_match_baluns.oneport.SimpleLosslessOnePort]) -> str:
+    """Creates a netlist of this topology with inductors and capacitors.
+
+    The network uses an inductor or a capacitor for each element depending on the values of each component.
+
+    Args:
+        components (abc.Sequence[five_element.oneport.SimpleLosslessOnePort]): Components used to determine how each element is implemented.
+
+    Returns:
+        str: The netlist with LC elements
+    """
+    netlist = cls.netlist
+    for component in components:
+      netlist = netlist.replace(f"Z{component.index}", component.symbol)
+    return netlist
+  
+  @classmethod
+  def lcapy_lc_circuit(cls, components: abc.Sequence[lc_power_match_baluns.oneport.SimpleLosslessOnePort]) -> lcapy.Circuit:
+    """Creates an Lcapy circuit form of this topology from its netlist.
+
+    The network uses an inductor or a capacitor for each element depending on the values of each component.
+
+    Args:
+        components (abc.Sequence[five_element.oneport.SimpleLosslessOnePort]): Components used to determine how each element is implemented.
+
+    Returns:
+        lcapy.Circuit: The Lcapy circuit form with LC elements
+    """
+    return lcapy.Circuit(cls.lc_netlist(components))
+
+  @classmethod
+  def calculate_elements_from_impedances(cls, rb: float, xb: float, ru: float, xu: float) -> abc.Sequence[tuple[float, ...]]:
+    """Calculates element reactances from impedances at each port for power matching and common-mode rejection
+
+    Args:
+        rb (float): Resistance presented to the balanced port
+        xb (float): Reactance presented to the balanced port
+        ru (float): Resistance presented to the unbalanced port
+        xu (float): Reactance presented to the unbalanced port
+
+    Raises:
+        NotImplementedError: If the topology has not implemented this method
+
+    Returns:
+        Sequence[tuple[float, ...]]: A sequence containing the element reactances for each solution
+    """
+    raise NotImplementedError
+
+class ExtendedTTopology(BalunTopology):
+  name = "Extended T"
+
+  netlist = """
+            Z1 1_0 5_0; right
+            Z2 5_0 3_1; down
+            W 3_0 3_1; right
+            Z4 3_1 0; right
+            Z3 5_0 2_0; right
+            W 0 0_0; down=0.1, ground
+            ; label_nodes=none
+        """
+
+  num_elements = 4
+
+  @classmethod
+  def calculate_elements_from_impedances(cls, rb: float, xb: float, ru: float, xu: float) -> abc.Sequence[tuple[float, ...]]:
+    zb = math.sqrt(rb ** 2 + xb ** 2)
+    x1_1 = -zb * math.sqrt(ru / rb) # pylint: disable=invalid-unary-operand-type
+    x1_2 = zb * math.sqrt(ru / rb)
+    x2_1 = zb * math.sqrt(ru / rb)
+    x2_2 = -zb * math.sqrt(ru / rb) # pylint: disable=invalid-unary-operand-type
+    x3_1 = ru * xb / rb - xu - zb / 2 * math.sqrt(ru / rb)
+    x3_2 = ru * xb / rb - xu + zb / 2 * math.sqrt(ru / rb)
+    x4_1 = -zb / 2 * math.sqrt(ru / rb) # pylint: disable=invalid-unary-operand-type
+    x4_2 = zb / 2 * math.sqrt(ru / rb)
+    return [(x1_1, x2_1, x3_1, x4_1), (x1_2, x2_2, x3_2, x4_2)]
+  
+class ExtendedPiTopology(BalunTopology):
+  name = "Extended Pi"
+
+  netlist = """
+            Z1 1_0 3_0; down
+            Z2 1_0 2_0; right
+            Z3 2_0 3_1; down
+            Z4 3_1 0; right
+            W 3_0 3_1; right
+            W 2_0 2_1; right
+            W 1_1 1_0; right
+            W 3_2 3_0; right
+            W 0 0_0; down=0.1, ground
+            ; label_nodes=none
+        """
+
+  num_elements = 4
+
+  @classmethod
+  def calculate_elements_from_impedances(cls, rb: float, xb: float, ru: float, xu: float) -> abc.Sequence[tuple[float, ...]]:
+    zb = math.sqrt(rb ** 2 + xb ** 2)
+    x1_1 = 2 * zb ** 2 * ru / (2 * xu * rb - 2 * ru * xb - zb * math.sqrt(ru * rb))
+    x1_2 = 2 * zb ** 2 * ru / (2 * xu * rb - 2 * ru * xb + zb * math.sqrt(ru * rb))
+    x2_1 = zb * math.sqrt(ru / rb)
+    x2_2 = -zb * math.sqrt(ru / rb) # pylint: disable=invalid-unary-operand-type
+    x3_1 = -zb * math.sqrt(ru / rb) # pylint: disable=invalid-unary-operand-type
+    x3_2 = zb * math.sqrt(ru / rb)
+    x4_1 = zb / 2 * math.sqrt(ru / rb)
+    x4_2 = -zb / 2 * math.sqrt(ru / rb) # pylint: disable=invalid-unary-operand-type
+    return [(x1_1, x2_1, x3_1, x4_1), (x1_2, x2_2, x3_2, x4_2)]
+
+class LatticeTopology(BalunTopology):
+  name = "Lattice"
+
+  netlist = """
+            Z2 5_1 6_0; right
+            W 6_0 6_1; right
+            Z4 6_1 4_2; rotate=225
+            W 4_2 4_1; rotate=225
+            W 4_1 4_0; right
+            Z3 4_0 0_3; right
+            Z1 5_2 0_0; rotate=-45
+            W 5_2 5_1; right
+            W 0_1 0_3; rotate=-45
+            W 0_0 0_1; right
+            W 0_3 0_2; right
+            W 0_2 0; right
+            W 1_0 5_2; right
+            W 3_0 4_1; right
+            W 6_1 2_0; right
+            W 0 0_4; down=0.1, ground
+            ; label_nodes=none
+        """
+
+  num_elements = 4
+
+  @classmethod
+  def calculate_elements_from_impedances(cls, rb: float, xb: float, ru: float, xu: float) -> abc.Sequence[tuple[float, ...]]:
+    zb = math.sqrt(rb ** 2 + xb ** 2)
+    x1 = ru * zb ** 2 / (2 * rb * xu - 2 * ru * xb - zb * math.sqrt(ru * rb))
+    x2 = zb * math.sqrt(ru / rb)
+    x3 = ru * zb ** 2 / (2 * rb * xu - 2 * ru * xb + zb * math.sqrt(rb * ru))
+    x4 = -zb * math.sqrt(ru / rb)
+    return [(x1, x2, x3, x4)]
+
+class DipperTopology(BalunTopology):
+  name = "Dipper"
+
+  netlist = """
+Z2 5 4; down
+W 5 2; right
+Z4 2 0_2; down
+Z3 4 0_2; right
+W 3 4; right
+Z1 1_1 5; right
+W 2 2_0; right
+W 0_2 0; right
+W 0 0_1; down=0.1, ground
+; label_nodes=none
+"""
+
+  num_elements = 4
+  
+  @classmethod
+  def _calc_dipper_reactances_special(cls, xb: float, ru: float, xu: float) -> abc.Sequence[tuple[float, ...]]:
+    zu2 = ru ** 2 + xu ** 2
+    x1 = -xb / 2 + 2 * xu
+    x2 = xb / 2 - 2 * xu
+    x3 = -xb / 4 + xu
+    x4 = zu2 * (4 * xu - xb) / (4 * ru ** 2 - 4 * xu ** 2 + 2 * xb * xu)
+    return [(x1, x2, x3, x4)]
+
+  @classmethod
+  def calculate_elements_from_impedances(cls, rb: float, xb: float, ru: float, xu: float) -> abc.Sequence[tuple[float, ...]]:
+    zu2 = ru ** 2 + xu ** 2
+    delta = 4 * zu2 - rb * ru
+    if delta < 0:
+      return []
+    factor = rb - 4 * ru
+    if factor == 0:
+      return cls._calc_dipper_reactances_special(xb, ru, xu)
+    x1_1 = -xb / 2 - math.sqrt(rb * delta / ru) / 2
+    x1_2 = -xb / 2 + math.sqrt(rb * delta / ru) / 2
+    x2_1 = xb / 2 + math.sqrt(rb * delta / ru) / 2
+    x2_2 = xb / 2 - math.sqrt(rb * delta / ru) / 2
+    x3_1 = -xb / 4 - math.sqrt(rb * delta / ru) / 4
+    x3_2 = -xb / 4 + math.sqrt(rb * delta / ru) / 4
+    x4_1 = -xu - ru * xb / rb + ru ** 2 * (rb ** 2 + xb ** 2) * factor / (ru * rb * (xb * factor + 4 * rb * xu) + rb ** 2 * math.sqrt(rb * ru * delta))
+    x4_2 = -xu - ru * xb / rb + ru ** 2 * (rb ** 2 + xb ** 2) * factor / (ru * rb * (xb * factor + 4 * rb * xu) - rb ** 2 * math.sqrt(rb * ru * delta))
+    return [(x1_1, x2_1, x3_1, x4_1), (x1_2, x2_2, x3_2, x4_2)]
+
+class YuTopology(BalunTopology):
+  name = "Yu"
+
+  netlist = """
+            Z1 1_0 2_1; right
+            Z3 2_1 4_0; down
+            Z2 3_0 4_0; right
+            Z4 4_0 0; right
+            W 2_1 2_0; right
+            W 0 0_0; down=0.1, ground
+            ; label_nodes=none
+        """
+
+  num_elements = 4
+
+  @classmethod
+  def _calc_yu_reactances_special(cls, xb: float, ru: float, xu: float) -> abc.Sequence[tuple[float, ...]]:
+    zu2 = ru ** 2 + xu ** 2
+    x1 = 2 * xu - xb / 2
+    x2 = xu - ru ** 2 / xu - xb / 2
+    x3 = -xu - ru ** 2 / xu
+    x4 = zu2 / 2 / xu
+    return [(x1, x2, x3, x4)]
+  
+  @classmethod
+  def calculate_elements_from_impedances(cls, rb: float, xb: float, ru: float, xu: float) -> abc.Sequence[tuple[float, ...]]:
+    zu2 = ru ** 2 + xu ** 2
+    delta = 4 * zu2 - rb * ru
+    if delta < 0:
+      return []
+    denominator = 4 * ru - rb
+    if denominator == 0:
+      return cls._calc_yu_reactances_special(xb, ru, xu)
+    x1_1 = -xb / 2 + math.sqrt(rb * delta / ru) / 2
+    x1_2 = -xb / 2 - math.sqrt(rb * delta / ru) / 2
+    x2_1 = 2 * rb * xu / (4 * ru - rb) - xb / 2 - math.sqrt(rb ** 3 * delta / ru) / 2 / denominator
+    x2_2 = 2 * rb * xu / (4 * ru - rb) - xb / 2 + math.sqrt(rb ** 3 * delta / ru) / 2 / denominator
+    x3_1 = (2 * rb * xu - 2 * math.sqrt(ru * rb * delta)) / denominator
+    x3_2 = (2 * rb * xu + 2 * math.sqrt(ru * rb * delta)) / denominator
+    x4_1 = -(rb * xu - math.sqrt(ru * rb * delta)) / denominator
+    x4_2 = -(rb * xu + math.sqrt(ru * rb * delta)) / denominator
+    return [(x1_1, x2_1, x3_1, x4_1), (x1_2, x2_2, x3_2, x4_2)]
+  
+class ReverseYuTopology(BalunTopology):
+  name = "Reverse Yu"
+
+  netlist = """
+            W 1_0 1_1; right
+            Z2 1_1 4_0; down
+            Z1 3_0 4_0; right
+            Z4 4_0 0; right
+            Z3 1_1 2_0; right
+            W 0 0_0; down=0.1, ground
+            ; label_nodes=none
+        """
+
+  num_elements = 4
+
+  @classmethod
+  def _calc_reverse_yu_reactances_special(cls, xb: float, ru: float, xu: float):
+    x1 = -4 * ru ** 2 / xb - xb / 4
+    x2 = -4 * ru ** 2 / xb - xb / 4
+    x3 = xb / 4 - xu
+    x4 = 2 * ru ** 2 / xb + xb / 8
+    return [(x1, x2, x3, x4)]
+
+  @classmethod
+  def calculate_elements_from_impedances(cls, rb: float, xb: float, ru: float, xu: float) -> abc.Sequence[tuple[float, ...]]:
+    zb2 = rb ** 2 + xb ** 2
+    delta = -4 * ru * rb + zb2
+    if delta < 0:
+      return []
+    denominator = 4 * ru - rb
+    if denominator == 0:
+      return cls._calc_reverse_yu_reactances_special(xb, ru, xu)
+    x3_1 = -xu - math.sqrt(ru * delta / rb) / 2
+    x3_2 = -xu + math.sqrt(ru * delta / rb) / 2
+    x4_1 = (2 * ru * xb + math.sqrt(ru * rb * delta)) / 2 / denominator
+    x4_2 = (2 * ru * xb - math.sqrt(ru * rb * delta)) / 2 / denominator
+    x2_1 = (-2 * ru * xb - math.sqrt(ru * rb * delta)) / denominator
+    x2_2 = (-2 * ru * xb + math.sqrt(ru * rb * delta)) / denominator
+    x1_1 = (-2 * ru * xb - math.sqrt(ru * rb * delta)) / denominator
+    x1_2 = (-2 * ru * xb + math.sqrt(ru * rb * delta)) / denominator
+    return [(x1_1, x2_1, x3_1, x4_1), (x1_2, x2_2, x3_2, x4_2)]
+  
+class TraditionalLatticeTopology(BalunTopology):
+  """The lattice topology from [1] extended with three elements to enable it to power match complex impedances.
+
+  [1] C Lorenz AG, "Circuit arrangement for the transition from a symmetrical electrical arrangement to an asymmetrical one, in particular in the case of high-frequency arrangements," Germany Patent 603 816, April 1, 1932. [Online]. Available: https://patents.google.com/patent/DE603816C/en
+  """
+
+  name = "Traditional Lattice"
+
+  netlist = """
+            Z1 1_0 5_0; right
+            Z4 5_1 6_0; right
+            W 6_0 6_1; right
+            Z6 6_1 4_2; rotate=225
+            W 4_2 4_1; rotate=225
+            W 4_1 4_0; right
+            Z5 4_0 0_3; right
+            Z3 5_2 0_0; rotate=-45
+            W 5_2 5_1; right
+            W 0_1 0_3; rotate=-45
+            W 0_0 0_1; right
+            W 0_3 0_2; right
+            W 0_2 0; right
+            W 5_0 5_2; right
+            Z2 3_0 4_1; right
+            Z7 6_1 2_0; right
+            W 0 0_4; down=0.1, ground
+            ; label_nodes=none
+        """
+
+  num_elements = 7
+
+  @classmethod
+  def calculate_elements_from_impedances(cls, rb: float, xb: float, ru: float, xu: float) -> abc.Sequence[tuple[float, ...]]:
+    x1 = x2 = -xb / 2
+    x4 = x5 = math.sqrt(rb * ru)
+    x3 = x6 = -math.sqrt(rb * ru) # pylint: disable=invalid-unary-operand-type
+    x7 = -xu
+    return [(x1, x2, x3, x4, x5, x6, x7)]

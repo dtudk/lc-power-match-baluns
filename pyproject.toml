@@ -1,0 +1,24 @@
+[project]
+name = "lc-power-match-baluns"
+version = "1.0.0"
+authors = [
+  { name="Rasmus Jepsen", email="rasale@dtu.dk" },
+]
+description = "Models power matching LC-baluns"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["lcapy~=1.15"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = {text = "LGPL-2.1-or-later"}
+
+[project.urls]
+"Homepage" = "https://github.com/dtudk/lc-power-match-baluns"
+"Bug Tracker" = "https://github.com/dtudk/lc-power-match-baluns/issues"
+
+[build-system]
+requires = [
+    "setuptools_scm[toml]>=6.2",
+]
