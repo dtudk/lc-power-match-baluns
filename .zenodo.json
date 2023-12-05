@@ -1,0 +1,72 @@
+{
+  "upload_type": "software",
+
+  "title": "LC power-matching baluns",
+
+  "creators": [
+      {
+          "orcid": "0009-0000-5282-7470",
+          "affiliation": "Technical University of Denmark",
+          "name": "Jepsen, Rasmus Alexander"
+      }
+  ],
+
+  "description": "This repository implements calculations for four-element power matching LC-baluns. These four-element networks provide common-mode rejection in addition to power matching for arbitrary complex impedances at the design frequency. See the README.md file at the root of the repository for more information.",
+
+  "license": "lgpl-2.1-or-later",
+
+  "contributors": [
+    {
+      "orcid": "0000-0001-6167-6926",
+      "affiliation": "Technical University of Denmark",
+      "name": "Ardenkjær-Larsen, Jan Henrik",
+      "type": "Supervisor"
+    },
+    {
+      "orcid": "0000-0002-1515-733X",
+      "affiliation": "Technical University of Denmark",
+      "name": "Zhurbenko, Vitaliy",
+      "type": "Supervisor"
+    }
+  ],
+
+  "references": [
+    "C Lorenz AG, \"Circuit arrangement for the transition from a symmetrical electrical arrangement to an asymmetrical one, in particular in the case of high-frequency arrangements,\" Germany Patent 603 816, April 1, 1932. [Online]. Available: https://patents.google.com/patent/DE603816C/en",
+    "M. Hayes, \"Lcapy: symbolic linear circuit analysis with Python,\" PeerJ Computer Science, p. e875, Feb. 2022. [Online]. Available: https://doi.org/10.7717/peerj-cs.875",
+    "D. Bockelman and W. Eisenstadt, \"Combined differential and common-mode analysis of power splitters and combiners,\" IEEE Transactions on Microwave Theory and Techniques, vol. 43, no. 11, pp. 2627–2632, 1995.",
+    "K. Kurokawa, \"Power waves and the scattering matrix,\" IEEE Transactions on Microwave Theory and Techniques, vol. 13, no. 2, pp. 194–202, 1965.",
+    "J. Tippet and R. Speciale, \"A rigorous technique for measuring the scattering matrix of a multiport device with a 2-port network analyzer,\" IEEE Transactions on Microwave Theory and Techniques, vol. 30, no. 5, pp. 661–666, 1982.",
+    "A. Arsenovic, J. Hillairet, J. Anderson, H. Forst ́en, V. Rieß, M. Eller, N. Sauber, R. Weikle, W. Barnhart, and F. Forstmayr, \"scikit-rf: An open source python package for microwave network creation, analysis, and calibration [speaker’s corner],\" IEEE Microwave Magazine, vol. 23, no. 1, pp. 98–105, 2022."
+  ],
+
+  "grants": [{"id":"10.13039/501100000780::856432"}],
+
+  "thesis_supervisors": [
+    {
+      "orcid": "0000-0002-1515-733X",
+      "affiliation": "Technical University of Denmark",
+      "name": "Zhurbenko, Vitaliy"
+    },
+    {
+      "orcid": "0000-0001-6167-6926",
+      "affiliation": "Technical University of Denmark",
+      "name": "Ardenkjær-Larsen, Jan Henrik"
+    },
+    {
+      "orcid": "0000-0002-1074-2601",
+      "affiliation": "University of Queensland",
+      "name": "Liu, Feng"
+    },
+    {
+      "orcid": "0000-0002-7323-8015",
+      "affiliation": "University of Queensland",
+      "name": "Weber, Ewald"
+    }
+  ],
+
+  "thesis_university": "Technical University of Denmark (DTU)",
+
+  "version": "1.0.0",
+
+  "language": "eng"
+}
