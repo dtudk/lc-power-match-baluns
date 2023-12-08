@@ -270,6 +270,7 @@ W 0 0_1; down=0.1, ground
   @classmethod
   def calculate_elements_from_impedances(cls, rb: float, xb: float, ru: float, xu: float) -> abc.Sequence[tuple[float, ...]]:
     zu2 = ru ** 2 + xu ** 2
+    zb2 = rb ** 2 + xb ** 2
     delta = 4 * zu2 - rb * ru
     if delta < 0:
       return []
@@ -282,8 +283,8 @@ W 0 0_1; down=0.1, ground
     x2_2 = xb / 2 - math.sqrt(rb * delta / ru) / 2
     x3_1 = -xb / 4 - math.sqrt(rb * delta / ru) / 4
     x3_2 = -xb / 4 + math.sqrt(rb * delta / ru) / 4
-    x4_1 = -xu - ru * xb / rb + ru ** 2 * (rb ** 2 + xb ** 2) * factor / (ru * rb * (xb * factor + 4 * rb * xu) + rb ** 2 * math.sqrt(rb * ru * delta))
-    x4_2 = -xu - ru * xb / rb + ru ** 2 * (rb ** 2 + xb ** 2) * factor / (ru * rb * (xb * factor + 4 * rb * xu) - rb ** 2 * math.sqrt(rb * ru * delta))
+    x4_1 = ru * zb2 / rb ** 2 * factor / (xb + 4 * xu - 4 * ru * xb / rb + math.sqrt(rb * delta / ru)) - xu - ru * xb / rb
+    x4_2 = ru * zb2 / rb ** 2 * factor / (xb + 4 * xu - 4 * ru * xb / rb - math.sqrt(rb * delta / ru)) - xu - ru * xb / rb
     return [(x1_1, x2_1, x3_1, x4_1), (x1_2, x2_2, x3_2, x4_2)]
 
 class YuTopology(BalunTopology):
@@ -361,14 +362,14 @@ class ReverseYuTopology(BalunTopology):
     denominator = 4 * ru - rb
     if denominator == 0:
       return cls._calc_reverse_yu_reactances_special(xb, ru, xu)
+    x1_1 = (-2 * ru * xb - math.sqrt(ru * rb * delta)) / denominator
+    x1_2 = (-2 * ru * xb + math.sqrt(ru * rb * delta)) / denominator
+    x2_1 = (-2 * ru * xb - math.sqrt(ru * rb * delta)) / denominator
+    x2_2 = (-2 * ru * xb + math.sqrt(ru * rb * delta)) / denominator
     x3_1 = -xu - math.sqrt(ru * delta / rb) / 2
     x3_2 = -xu + math.sqrt(ru * delta / rb) / 2
     x4_1 = (2 * ru * xb + math.sqrt(ru * rb * delta)) / 2 / denominator
     x4_2 = (2 * ru * xb - math.sqrt(ru * rb * delta)) / 2 / denominator
-    x2_1 = (-2 * ru * xb - math.sqrt(ru * rb * delta)) / denominator
-    x2_2 = (-2 * ru * xb + math.sqrt(ru * rb * delta)) / denominator
-    x1_1 = (-2 * ru * xb - math.sqrt(ru * rb * delta)) / denominator
-    x1_2 = (-2 * ru * xb + math.sqrt(ru * rb * delta)) / denominator
     return [(x1_1, x2_1, x3_1, x4_1), (x1_2, x2_2, x3_2, x4_2)]
   
 class TraditionalLatticeTopology(BalunTopology):
