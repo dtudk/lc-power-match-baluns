@@ -5,7 +5,7 @@ This repository implements calculations for four-element power matching LC-balun
 These four-element networks provide common-mode rejection in addition to power matching for arbitrary complex impedances at the design frequency.
 
 ## Installation
-To install the Python package (required for using the Jupyter notebook), run `python3 -m pip install git+https://github.com/dtudk/lc-power-match-baluns.git`.
+To install the Python package (required for using the Jupyter notebook), run `python3 -m pip install lc-power-match-baluns`.
 Alternatively, run `pip install .` in the root directory of this repository.
 
 To use the Jupyter notebook, the requirements at [https://lcapy.readthedocs.io/en/latest/install.html](https://lcapy.readthedocs.io/en/latest/install.html) must also be installed.
