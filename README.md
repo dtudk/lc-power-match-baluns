@@ -1,5 +1,7 @@
 # lc-power-match-baluns
 
+[![DOI](https://zenodo.org/badge/702896716.svg)](https://zenodo.org/badge/latestdoi/702896716)
+
 ## Description
 This repository implements calculations for four-element power matching LC-baluns.
 These four-element networks provide common-mode rejection in addition to power matching for arbitrary complex impedances at the design frequency.
