@@ -41,29 +41,6 @@
 
   "grants": [{"id":"10.13039/501100000780::856432"}],
 
-  "thesis_supervisors": [
-    {
-      "orcid": "0000-0002-1515-733X",
-      "affiliation": "Technical University of Denmark",
-      "name": "Zhurbenko, Vitaliy"
-    },
-    {
-      "orcid": "0000-0001-6167-6926",
-      "affiliation": "Technical University of Denmark",
-      "name": "Ardenkjær-Larsen, Jan Henrik"
-    },
-    {
-      "orcid": "0000-0002-1074-2601",
-      "affiliation": "University of Queensland",
-      "name": "Liu, Feng"
-    },
-    {
-      "orcid": "0000-0002-7323-8015",
-      "affiliation": "University of Queensland",
-      "name": "Weber, Ewald"
-    }
-  ],
-
   "thesis_university": "Technical University of Denmark (DTU)",
 
   "version": "1.0.1",
