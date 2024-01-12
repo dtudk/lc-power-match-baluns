@@ -11,7 +11,7 @@
       }
   ],
 
-  "description": "This repository implements calculations for four-element power matching LC-baluns to accompany the research article \"Four-Element LC-Baluns for Power Matching Arbitrary Impedances\" by Rasmus Jepsen, Jan Henrik Ardenkjær-Larsen, and Vitaliy Zhurbenko (submitted to IEEE T-MTT). These four-element networks provide common-mode rejection in addition to power matching for arbitrary complex impedances at the design frequency. See the README.md file at the root of the repository for more information.",
+  "description": "This repository implements calculations for four-element power matching LC-baluns to accompany the research article \"Four-Element LC-Baluns for Power Matching Arbitrary Impedances\" by Rasmus Jepsen, Jan Henrik Ardenkjær-Larsen, and Vitaliy Zhurbenko (submitted). These four-element networks provide common-mode rejection in addition to power matching for arbitrary complex impedances at the design frequency. See the README.md file at the root of the repository for more information.",
 
   "license": "lgpl-2.1-or-later",
 
