@@ -1,6 +1,6 @@
 [project]
 name = "lc-power-match-baluns"
-version = "1.0.2"
+version = "1.0.3"
 authors = [
   { name="Rasmus Jepsen", email="rasale@dtu.dk" },
 ]
