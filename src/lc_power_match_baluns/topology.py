@@ -23,6 +23,7 @@ import sympy
 import lc_power_match_baluns.oneport
 from collections import abc
 import math
+import numpy as np
 
 class BalunTopology:
   """A power matching LC-balun topology"""
@@ -196,8 +197,8 @@ class ExtendedPiTopology(BalunTopology):
   @classmethod
   def calculate_elements_from_impedances(cls, rb: float, xb: float, ru: float, xu: float) -> abc.Sequence[tuple[float, ...]]:
     zb = math.sqrt(rb ** 2 + xb ** 2)
-    x1_1 = 2 * zb ** 2 * ru / (2 * xu * rb - 2 * ru * xb - zb * math.sqrt(ru * rb))
-    x1_2 = 2 * zb ** 2 * ru / (2 * xu * rb - 2 * ru * xb + zb * math.sqrt(ru * rb))
+    x1_1 = float(np.float64(2 * zb ** 2 * ru) / (2 * xu * rb - 2 * ru * xb - zb * math.sqrt(ru * rb)))
+    x1_2 = float(np.float64(2 * zb ** 2 * ru) / (2 * xu * rb - 2 * ru * xb + zb * math.sqrt(ru * rb)))
     x2_1 = zb * math.sqrt(ru / rb)
     x2_2 = -zb * math.sqrt(ru / rb) # pylint: disable=invalid-unary-operand-type
     x3_1 = -zb * math.sqrt(ru / rb) # pylint: disable=invalid-unary-operand-type
@@ -234,9 +235,9 @@ class LatticeTopology(BalunTopology):
   @classmethod
   def calculate_elements_from_impedances(cls, rb: float, xb: float, ru: float, xu: float) -> abc.Sequence[tuple[float, ...]]:
     zb = math.sqrt(rb ** 2 + xb ** 2)
-    x1 = ru * zb ** 2 / (2 * rb * xu - 2 * ru * xb - zb * math.sqrt(ru * rb))
+    x1 = float(np.float64(ru * zb ** 2) / (2 * rb * xu - 2 * ru * xb - zb * math.sqrt(ru * rb)))
     x2 = zb * math.sqrt(ru / rb)
-    x3 = ru * zb ** 2 / (2 * rb * xu - 2 * ru * xb + zb * math.sqrt(rb * ru))
+    x3 = float(np.float64(ru * zb ** 2) / (2 * rb * xu - 2 * ru * xb + zb * math.sqrt(rb * ru)))
     x4 = -zb * math.sqrt(ru / rb)
     return [(x1, x2, x3, x4)]
 
@@ -264,7 +265,7 @@ W 0 0_1; down=0.1, ground
     x1 = -xb / 2 + 2 * xu
     x2 = xb / 2 - 2 * xu
     x3 = -xb / 4 + xu
-    x4 = zu2 * (4 * xu - xb) / (4 * ru ** 2 - 4 * xu ** 2 + 2 * xb * xu)
+    x4 = float(np.float64(zu2) * (4 * xu - xb) / (4 * ru ** 2 - 4 * xu ** 2 + 2 * xb * xu))
     return [(x1, x2, x3, x4)]
 
   @classmethod
@@ -283,8 +284,8 @@ W 0 0_1; down=0.1, ground
     x2_2 = xb / 2 - math.sqrt(rb * delta / ru) / 2
     x3_1 = -xb / 4 - math.sqrt(rb * delta / ru) / 4
     x3_2 = -xb / 4 + math.sqrt(rb * delta / ru) / 4
-    x4_1 = ru * zb2 / rb ** 2 * factor / (xb + 4 * xu - 4 * ru * xb / rb + math.sqrt(rb * delta / ru)) - xu - ru * xb / rb
-    x4_2 = ru * zb2 / rb ** 2 * factor / (xb + 4 * xu - 4 * ru * xb / rb - math.sqrt(rb * delta / ru)) - xu - ru * xb / rb
+    x4_1 = float(np.float64(ru * zb2 / rb ** 2 * factor) / (xb + 4 * xu - 4 * ru * xb / rb + math.sqrt(rb * delta / ru)) - xu - ru * xb / rb)
+    x4_2 = float(np.float64(ru * zb2 / rb ** 2 * factor) / (xb + 4 * xu - 4 * ru * xb / rb - math.sqrt(rb * delta / ru)) - xu - ru * xb / rb)
     return [(x1_1, x2_1, x3_1, x4_1), (x1_2, x2_2, x3_2, x4_2)]
 
 class YuTopology(BalunTopology):
@@ -306,9 +307,9 @@ class YuTopology(BalunTopology):
   def _calc_yu_reactances_special(cls, xb: float, ru: float, xu: float) -> abc.Sequence[tuple[float, ...]]:
     zu2 = ru ** 2 + xu ** 2
     x1 = 2 * xu - xb / 2
-    x2 = xu - ru ** 2 / xu - xb / 2
-    x3 = -xu - ru ** 2 / xu
-    x4 = zu2 / 2 / xu
+    x2 = xu - float(np.float64(ru ** 2) / xu) - xb / 2
+    x3 = -xu - float(np.float64(ru ** 2) / xu)
+    x4 = float(np.float64(zu2) / 2 / xu)
     return [(x1, x2, x3, x4)]
   
   @classmethod
@@ -350,7 +351,7 @@ class ReverseYuTopology(BalunTopology):
     x1 = -4 * ru ** 2 / xb - xb / 4
     x2 = -4 * ru ** 2 / xb - xb / 4
     x3 = xb / 4 - xu
-    x4 = 2 * ru ** 2 / xb + xb / 8
+    x4 = float(np.float64(2 * ru ** 2) / xb) + xb / 8
     return [(x1, x2, x3, x4)]
 
   @classmethod
