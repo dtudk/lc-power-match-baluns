@@ -24,6 +24,7 @@ import lc_power_match_baluns.oneport
 from collections import abc
 import math
 import numpy as np
+import skrf
 
 class BalunTopology:
   """A power matching LC-balun topology"""
@@ -34,42 +35,108 @@ class BalunTopology:
 
   num_elements: int = 0
 
-  _two_port_x_params_func = None
+  _two_port_z_params_func = None
   _three_port_z_params_func = None
 
   @classmethod
-  def calculate_two_port_reactance_parameters(cls,
-      element_reactances: abc.Sequence[float]) -> tuple[float, float, float]:
-    """Calculates two-port reactance parameters from element reactances
+  def calculate_two_port_impedance_parameters(cls,
+      element_impedances: abc.Sequence[complex]):
+    """Calculates two-port impedance parameters from element impedances
 
     Args:
-        element_reactances (abc.Sequence[float]): The reactances of each element
+        element_impedances (abc.Sequence[complex]): The impedances of each element
 
     Raises:
         NotImplementedError: If the topology has not implemented this method
 
     Returns:
-        tuple[float, float, float]: The reactance parameters (x11, x12, x22)
+        The z parameters
     """
-    if cls._two_port_x_params_func is None:
-      num_elements = len(element_reactances)
+    element_impedances_array = np.array(element_impedances, dtype=complex)
+    if cls._two_port_z_params_func is None:
+      num_elements = len(element_impedances)
       circuit = cls.lcapy_circuit()
       impedance_symbols = [lcapy.symbol(f"Z{i + 1}").sympy for i in range(num_elements)]
-      reactance_symbols = [sympy.Symbol(f"X{i + 1}") for i in range(num_elements)]
-      impedance_subs = [(impedance_symbols[i], lcapy.j * reactance_symbols[i]) for i in range(num_elements)]
-      z_params = circuit.Zparamsn("1_0", "3_0", "2_0", 0).sympy.subs(impedance_subs)
-      x_params = sympy.Matrix([sympy.im(z_params[0, 0]), sympy.im(z_params[0, 1]), sympy.im(z_params[1, 1])])
-      cls._two_port_x_params_func = sympy.lambdify([tuple(reactance_symbols)], x_params)
-    result = cls._two_port_x_params_func(element_reactances) # pylint: disable=not-callable
-    return tuple(map(tuple, result.T))[0] # type: ignore [return-value]
+      z_params = circuit.Zparamsn("1_0", "3_0", "2_0", 0).sympy
+      cls._two_port_z_params_func = sympy.lambdify([tuple(impedance_symbols)], z_params)
+    result = cls._two_port_z_params_func(element_impedances_array) # pylint: disable=not-callable
+    return result # type: ignore [return-value]
+  
+  @classmethod
+  def calculate_two_port_scattering_parameters(cls,
+      rb: float, xb: float, ru: float, xu: float, element_impedances: abc.Sequence[complex],
+      s_def="power"):
+    """Calculates two-port scattering parameters from element impedances
+
+    Args:
+        rb (float): Resistance presented to the balanced port
+        xb (float): Reactance presented to the balanced port
+        ru (float): Resistance presented to the unbalanced port
+        xu (float): Reactance presented to the unbalanced port
+        element_impedances (abc.Sequence[complex]): The impedances of each element
+        s_def (str, optional): The scattering parameter definition to use from scikit-rf. Defaults to "power".
+
+    Returns:
+        The s parameters
+    """
+    twoport_z = cls.calculate_two_port_impedance_parameters(element_impedances)
+    network = skrf.Network.from_z(twoport_z, s_def = s_def, z0=[rb + 1j * xb, ru + 1j * xu])
+    result = network.s
+    return result # type: ignore [return-value]
+  
+  @classmethod
+  def calculate_insertion_loss(cls,
+      rb: float, xb: float, ru: float, xu: float, element_impedances: abc.Sequence[complex],
+      s_def="power") -> float:
+    """Calculates differential mode insertion loss from element impedances
+
+    Args:
+        rb (float): Resistance presented to the balanced port
+        xb (float): Reactance presented to the balanced port
+        ru (float): Resistance presented to the unbalanced port
+        xu (float): Reactance presented to the unbalanced port
+        element_impedances (abc.Sequence[complex]): The impedances of each element
+        s_def (str, optional): The scattering parameter definition to use from scikit-rf. Defaults to "power".
+
+    Returns:
+        The insertion loss in decibels
+    """
+    twoport_s = cls.calculate_two_port_scattering_parameters(rb, xb, ru, xu, element_impedances, s_def)
+    s21 = twoport_s[0, 1, 0]
+    insertion_loss = -20 * np.log10(np.abs(s21))
+    return insertion_loss
+  
+  @classmethod
+  def calculate_return_losses(cls,
+      rb: float, xb: float, ru: float, xu: float, element_impedances: abc.Sequence[complex],
+      s_def="power") -> tuple[float, float]:
+    """Calculates differential mode return losses from element impedances
+
+    Args:
+        rb (float): Resistance presented to the balanced port
+        xb (float): Reactance presented to the balanced port
+        ru (float): Resistance presented to the unbalanced port
+        xu (float): Reactance presented to the unbalanced port
+        element_impedances (abc.Sequence[complex]): The impedances of each element
+        s_def (str, optional): The scattering parameter definition to use from scikit-rf. Defaults to "power".
+
+    Returns:
+        The return losses in decibels (balanced port, unbalanced port)
+    """
+    twoport_s = cls.calculate_two_port_scattering_parameters(rb, xb, ru, xu, element_impedances, s_def)
+    s11 = twoport_s[0, 0, 0]
+    s22 = twoport_s[0, 1, 1]
+    balanced_return_loss = -20 * np.log10(np.abs(s11))
+    unbalanced_return_loss = -20 * np.log10(np.abs(s22))
+    return (balanced_return_loss, unbalanced_return_loss)
 
   @classmethod
   def calculate_three_port_impedance_parameters(cls,
-      element_reactances: abc.Sequence[float]):
-    """Calculates three-port impedance parameters from element reactances
+      element_impedances: abc.Sequence[complex]):
+    """Calculates three-port impedance parameters from element impedances
 
     Args:
-        element_reactances (abc.Sequence[float]): The reactances of each element
+        element_impedances (abc.Sequence[complex]): The impedances of each element
 
     Raises:
         NotImplementedError: If the topology has not implemented this method
@@ -78,15 +145,57 @@ class BalunTopology:
         The z parameters
     """
     if cls._three_port_z_params_func is None:
-      num_elements = len(element_reactances)
+      num_elements = len(element_impedances)
       circuit = cls.lcapy_circuit()
       impedance_symbols = [lcapy.symbol(f"Z{i + 1}").sympy for i in range(num_elements)]
-      reactance_symbols = [sympy.Symbol(f"X{i + 1}") for i in range(num_elements)]
-      impedance_subs = [(impedance_symbols[i], lcapy.j * reactance_symbols[i]) for i in range(num_elements)]
-      z_params = circuit.Zparamsn("2_0", 0, "1_0", 0, "3_0", 0).sympy.subs(impedance_subs)
-      cls._three_port_z_params_func = sympy.lambdify([tuple(reactance_symbols)], z_params)
-    result = cls._three_port_z_params_func(element_reactances) # pylint: disable=not-callable
+      z_params = circuit.Zparamsn("2_0", 0, "1_0", 0, "3_0", 0).sympy
+      cls._three_port_z_params_func = sympy.lambdify([tuple(impedance_symbols)], z_params)
+    result = cls._three_port_z_params_func(element_impedances) # pylint: disable=not-callable
     return result # type: ignore [return-value]
+  
+  @classmethod
+  def calculate_three_port_scattering_parameters(cls,
+      rb: float, xb: float, ru: float, xu: float, element_impedances: abc.Sequence[complex],
+      s_def="power"):
+    """Calculates three-port scattering parameters from element impedances
+
+    Args:
+        rb (float): Resistance presented to the balanced port
+        xb (float): Reactance presented to the balanced port
+        ru (float): Resistance presented to the unbalanced port
+        xu (float): Reactance presented to the unbalanced port
+        element_impedances (abc.Sequence[complex]): The impedances of each element
+        s_def (str, optional): The scattering parameter definition to use from scikit-rf. Defaults to "power".
+
+    Returns:
+        The s parameters
+    """
+    twoport_z = cls.calculate_three_port_impedance_parameters(element_impedances)
+    network = skrf.Network.from_z(twoport_z, s_def = s_def, z0=[ru + 1j * xu, (rb + 1j * xb) / 2, (rb + 1j * xb) / 2])
+    result = network.s
+    return result # type: ignore [return-value]
+  
+  @classmethod
+  def calculate_cmrr(cls,
+      rb: float, xb: float, ru: float, xu: float, element_impedances: abc.Sequence[complex],
+      s_def="power") -> float:
+    """Calculates common mode rejection ratio from element impedances
+
+    Args:
+        rb (float): Resistance presented to the balanced port
+        xb (float): Reactance presented to the balanced port
+        ru (float): Resistance presented to the unbalanced port
+        xu (float): Reactance presented to the unbalanced port
+        element_impedances (abc.Sequence[complex]): The impedances of each element
+        s_def (str, optional): The scattering parameter definition to use from scikit-rf. Defaults to "power".
+
+    Returns:
+        The common mode rejection ratio in decibels
+    """
+    threeport_s = cls.calculate_three_port_scattering_parameters(rb, xb, ru, xu, element_impedances, s_def)
+    linear_cmrr = (threeport_s[0, 1, 0] - threeport_s[0, 2, 0]) / (threeport_s[0, 1, 0] + threeport_s[0, 2, 0])
+    cmrr_db = 20 * np.log10(np.abs(linear_cmrr))
+    return cmrr_db
 
   @classmethod
   def lcapy_circuit(cls) -> lcapy.Circuit:
@@ -249,8 +358,8 @@ Z2 5 4; down
 W 5 2; right
 Z4 2 0_2; down
 Z3 4 0_2; right
-W 3 4; right
-Z1 1_1 5; right
+W 3_0 4; right
+Z1 1_0 5; right
 W 2 2_0; right
 W 0_2 0; right
 W 0 0_1; down=0.1, ground
@@ -265,6 +374,8 @@ W 0 0_1; down=0.1, ground
     x1 = -xb / 2 + 2 * xu
     x2 = xb / 2 - 2 * xu
     x3 = -xb / 4 + xu
+    if x1 == 0 or x2 == 0 or x3 == 0:
+      return []
     x4 = float(np.float64(zu2) * (4 * xu - xb) / (4 * ru ** 2 - 4 * xu ** 2 + 2 * xb * xu))
     return [(x1, x2, x3, x4)]
 
@@ -305,11 +416,13 @@ class YuTopology(BalunTopology):
 
   @classmethod
   def _calc_yu_reactances_special(cls, xb: float, ru: float, xu: float) -> abc.Sequence[tuple[float, ...]]:
+    if xu == 0:
+      return []
     zu2 = ru ** 2 + xu ** 2
     x1 = 2 * xu - xb / 2
-    x2 = xu - float(np.float64(ru ** 2) / xu) - xb / 2
-    x3 = -xu - float(np.float64(ru ** 2) / xu)
-    x4 = float(np.float64(zu2) / 2 / xu)
+    x2 = xu - ru ** 2 / xu - xb / 2
+    x3 = -xu - ru ** 2 / xu
+    x4 = zu2 / 2 / xu
     return [(x1, x2, x3, x4)]
   
   @classmethod
@@ -348,10 +461,12 @@ class ReverseYuTopology(BalunTopology):
 
   @classmethod
   def _calc_reverse_yu_reactances_special(cls, xb: float, ru: float, xu: float):
+    if xb == 0:
+      return []
     x1 = -4 * ru ** 2 / xb - xb / 4
     x2 = -4 * ru ** 2 / xb - xb / 4
     x3 = xb / 4 - xu
-    x4 = float(np.float64(2 * ru ** 2) / xb) + xb / 8
+    x4 = 2 * ru ** 2 / xb + xb / 8
     return [(x1, x2, x3, x4)]
 
   @classmethod
