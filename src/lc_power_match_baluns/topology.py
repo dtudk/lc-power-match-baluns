@@ -258,6 +258,13 @@ class BalunTopology:
     raise NotImplementedError
 
 class ExtendedTTopology(BalunTopology):
+  """Extended T balun topology for matching complex impedances.
+  Fritz et al. [1] have previously considered an equivalent topology and its design equations.
+  The design equations that have been used are those derived in the derivations folder independently.
+
+  [1] M. Fritz, M. Handtmann, and P. Bradley, "Four lc element balun," English, pat. 9 106 204, 2013. [Online]. Available: https://patents.google.com/patent/US9106204.
+  """
+
   name = "Extended T"
 
   netlist = """
@@ -286,6 +293,13 @@ class ExtendedTTopology(BalunTopology):
     return [(x1_1, x2_1, x3_1, x4_1), (x1_2, x2_2, x3_2, x4_2)]
   
 class ExtendedPiTopology(BalunTopology):
+  """Extended Pi balun topology for matching complex impedances.
+  Bradley and Frank [2] have previously considered a special case of this topology.
+  The design equations that have been used are those derived in the derivations folder independently.
+
+  [2] P. Bradley and M. Frank, "Combined balun and impedance matching circuit," English, pat. 8 633 781, 2010. [Online]. Available: https://patents.google.com/patent/US8633781B2/en.
+  """
+
   name = "Extended Pi"
 
   netlist = """
@@ -317,6 +331,18 @@ class ExtendedPiTopology(BalunTopology):
     return [(x1_1, x2_1, x3_1, x4_1), (x1_2, x2_2, x3_2, x4_2)]
 
 class LatticeTopology(BalunTopology):
+  """Generalized lattice balun topology for matching complex impedances.
+  Symmetric lattice baluns have previously been used for real-real matching [3],
+  though they require extra elements if used for complex impedance matching.
+  This topology relaxes the symmetry constraint to provide complex impedance matching with four elements.
+  Apel and Page [4] have also previously considered a balun network that resembles a specific case of an asymmetric lattice balun.
+
+  The design equations that have been used are those derived in the derivations folder independently.
+
+  [3] C Lorenz AG, "Circuit arrangement for the transition from a symmetrical electrical arrangement to an asymmetrical one, in particular in the case of high-frequency arrangements," Germany Patent 603 816, April 1, 1932. [Online]. Available: https://patents.google.com/patent/DE603816C/en
+  [4] T. R. Apel and C. E. Page, "Lumped parameter balun," English, pat. 5 574 411, 1995. [Online]. Available: https://patents.google.com/patent/US5574411A/en.
+  """
+
   name = "Lattice"
 
   netlist = """
@@ -489,9 +515,9 @@ class ReverseYuTopology(BalunTopology):
     return [(x1_1, x2_1, x3_1, x4_1), (x1_2, x2_2, x3_2, x4_2)]
   
 class TraditionalLatticeTopology(BalunTopology):
-  """The lattice topology from [1] extended with three elements to enable it to power match complex impedances.
+  """The lattice topology from [3] extended with three elements to enable it to power match complex impedances.
 
-  [1] C Lorenz AG, "Circuit arrangement for the transition from a symmetrical electrical arrangement to an asymmetrical one, in particular in the case of high-frequency arrangements," Germany Patent 603 816, April 1, 1932. [Online]. Available: https://patents.google.com/patent/DE603816C/en
+  [3] C Lorenz AG, "Circuit arrangement for the transition from a symmetrical electrical arrangement to an asymmetrical one, in particular in the case of high-frequency arrangements," Germany Patent 603 816, April 1, 1932. [Online]. Available: https://patents.google.com/patent/DE603816C/en
   """
 
   name = "Traditional Lattice"

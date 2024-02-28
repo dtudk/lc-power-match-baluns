@@ -31,7 +31,10 @@
   ],
 
   "references": [
+    "M. Fritz, M. Handtmann, and P. Bradley, \"Four lc element balun,\" English, pat. 9 106 204, 2013. [Online]. Available: https://patents.google.com/patent/US9106204.",
+    "P. Bradley and M. Frank, \"Combined balun and impedance matching circuit,\" English, pat. 8 633 781, 2010. [Online]. Available: https://patents.google.com/patent/US8633781B2/en.",
     "C Lorenz AG, \"Circuit arrangement for the transition from a symmetrical electrical arrangement to an asymmetrical one, in particular in the case of high-frequency arrangements,\" Germany Patent 603 816, April 1, 1932. [Online]. Available: https://patents.google.com/patent/DE603816C/en",
+    "T. R. Apel and C. E. Page, \"Lumped parameter balun,\" English, pat. 5 574 411, 1995. [Online]. Available: https://patents.google.com/patent/US5574411A/en.",
     "M. Hayes, \"Lcapy: symbolic linear circuit analysis with Python,\" PeerJ Computer Science, p. e875, Feb. 2022. [Online]. Available: https://doi.org/10.7717/peerj-cs.875",
     "D. Bockelman and W. Eisenstadt, \"Combined differential and common-mode analysis of power splitters and combiners,\" IEEE Transactions on Microwave Theory and Techniques, vol. 43, no. 11, pp. 2627–2632, 1995.",
     "K. Kurokawa, \"Power waves and the scattering matrix,\" IEEE Transactions on Microwave Theory and Techniques, vol. 13, no. 2, pp. 194–202, 1965.",
@@ -43,7 +46,7 @@
 
   "thesis_university": "Technical University of Denmark (DTU)",
 
-  "version": "1.0.3",
+  "version": "1.1.0",
 
   "language": "eng"
 }
