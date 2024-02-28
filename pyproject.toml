@@ -7,7 +7,7 @@ authors = [
 description = "Models power matching LC-baluns"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["lcapy~=1.15", "numpy~=1.24.3", "sympy~=1.12", "scikit_rf~=0.28.0"]
+dependencies = ["lcapy>=1.15", "numpy>=1.24.3", "sympy>=1.12", "scikit_rf>=0.31.0"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
