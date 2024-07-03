@@ -90,10 +90,8 @@ class BalunTopology:
     Returns:
         The s parameters
     """
-    twoport_z = cls.calculate_two_port_impedance_parameters(element_impedances)
-    network = skrf.Network.from_z(twoport_z, s_def = s_def, z0=[zb, zu])
-    result = network.s
-    return result # type: ignore [return-value]
+    s_params = cls.calculate_two_port_scattering_parameters([zb], [zu], list(zip(element_impedances)), s_def)
+    return s_params[0, :, :]
   
   @classmethod
   @multimethod
@@ -134,10 +132,8 @@ class BalunTopology:
     Returns:
         The insertion loss in decibels
     """
-    twoport_s = cls.calculate_two_port_scattering_parameters(zb, zu, element_impedances, s_def)
-    s21 = twoport_s[0, 1, 0]
-    insertion_loss = -20 * np.log10(np.abs(s21))
-    return insertion_loss
+    insertion_loss = cls.calculate_insertion_loss([zb], [zu], list(zip(element_impedances)), s_def)
+    return insertion_loss[0]
   
   @classmethod
   @multimethod
@@ -178,12 +174,8 @@ class BalunTopology:
     Returns:
         The return losses in decibels (balanced port, unbalanced port)
     """
-    twoport_s = cls.calculate_two_port_scattering_parameters(zb, zu, element_impedances, s_def)
-    s11 = twoport_s[0, 0, 0]
-    s22 = twoport_s[0, 1, 1]
-    balanced_return_loss = -20 * np.log10(np.abs(s11))
-    unbalanced_return_loss = -20 * np.log10(np.abs(s22))
-    return (balanced_return_loss, unbalanced_return_loss)
+    balanced_return_loss, unbalanced_return_loss = cls.calculate_return_losses([zb], [zu], list(zip(element_impedances)), s_def)
+    return (balanced_return_loss[0], unbalanced_return_loss[0])
   
   @classmethod
   @multimethod
@@ -267,10 +259,8 @@ class BalunTopology:
     Returns:
         The s parameters
     """
-    threeport_z = cls.calculate_three_port_impedance_parameters(element_impedances)
-    network = skrf.Network.from_z(threeport_z, s_def = s_def, z0=[zu, (zb) / 2, (zb) / 2])
-    result = network.s
-    return result # type: ignore [return-value]
+    s_params = cls.calculate_three_port_scattering_parameters([zb], [zu], list(zip(element_impedances)), s_def)
+    return s_params[0, :, :]
   
   @classmethod
   @multimethod
@@ -311,10 +301,8 @@ class BalunTopology:
     Returns:
         The common mode rejection ratio in decibels
     """
-    threeport_s = cls.calculate_three_port_scattering_parameters(zb, zu, element_impedances, s_def)
-    linear_cmrr = (threeport_s[0, 1, 0] - threeport_s[0, 2, 0]) / (threeport_s[0, 1, 0] + threeport_s[0, 2, 0])
-    cmrr_db = 20 * np.log10(np.abs(linear_cmrr))
-    return cmrr_db
+    cmrr_db = cls.calculate_cmrr([zb], [zu], list(zip(element_impedances)), s_def)
+    return cmrr_db[0]
   
   @classmethod
   @multimethod

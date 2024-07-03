@@ -163,7 +163,8 @@ class Capacitor(SimpleLosslessOnePort):
 
   @multimethod
   def calculate_reactance(self, frequency: float) -> float:
-    return -1 / (2 * math.pi * frequency * self.value)
+    reactance = self.calculate_reactance([frequency])
+    return reactance[0]
   
   @multimethod
   def calculate_reactance(self, frequency: abc.Sequence[float]) -> abc.Sequence[float]: # pylint: disable=function-redefined
@@ -171,9 +172,8 @@ class Capacitor(SimpleLosslessOnePort):
   
   @multimethod
   def calculate_impedance(self, frequency: float, q: float | int = np.inf) -> complex:
-    reactance = self.calculate_reactance(frequency)
-    resistance = -reactance / q
-    return resistance + reactance * 1.0j
+    impedance = self.calculate_impedance([frequency], q)
+    return impedance[0]
 
   @multimethod
   def calculate_impedance(self, frequency: abc.Sequence[float], q: abc.Sequence[float | int] | float | int = np.inf) -> abc.Sequence[complex]: # pylint: disable=function-redefined
@@ -197,7 +197,8 @@ class Inductor(SimpleLosslessOnePort):
   
   @multimethod
   def calculate_reactance(self, frequency: float) -> float:
-    return 2 * math.pi * frequency * self.value
+    reactance = self.calculate_reactance([frequency])
+    return reactance[0]
   
   @multimethod
   def calculate_reactance(self, frequency: abc.Sequence[float]) -> abc.Sequence[float]: # pylint: disable=function-redefined
@@ -205,13 +206,8 @@ class Inductor(SimpleLosslessOnePort):
   
   @multimethod
   def calculate_impedance(self, frequency: float, q: float | int = np.inf) -> complex:
-    reactance = self.calculate_reactance(frequency)
-    if reactance == 0.0:
-      return 0 + 0j
-    susceptance = 1.0 / reactance
-    conductance = susceptance * q
-    admittance = conductance + susceptance * 1.0j
-    return 1.0 / admittance
+    impedance = self.calculate_impedance([frequency], q)
+    return impedance[0]
 
   @multimethod
   def calculate_impedance(self, frequency: abc.Sequence[float], q: abc.Sequence[float | int] | float | int = np.inf) -> abc.Sequence[complex]: # pylint: disable=function-redefined
@@ -220,8 +216,8 @@ class Inductor(SimpleLosslessOnePort):
       return np.zeros_like(frequency)
     if isinstance(q, float):
       q = q * np.ones_like(frequency)
-    susceptance = 1.0 / reactance
-    conductance = susceptance * np.array(q)
+    susceptance = -1.0 / reactance
+    conductance = -susceptance / np.array(q)
     admittance = conductance + susceptance * 1.0j
     return 1.0 / admittance
   
