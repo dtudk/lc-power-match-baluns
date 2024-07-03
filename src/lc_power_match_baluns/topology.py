@@ -47,9 +47,6 @@ class BalunTopology:
     Args:
         element_impedances (abc.Sequence[complex]): The impedances of each element in ohms
 
-    Raises:
-        NotImplementedError: If the topology has not implemented this method
-
     Returns:
         The z parameters in ohms
     """
@@ -72,9 +69,6 @@ class BalunTopology:
     Args:
         element_impedances (abc.Sequence[abc.Sequence[complex]]): A sequence of all elements,
             with the inner sequence representing the impedance of an element in ohms over frequency
-
-    Raises:
-        NotImplementedError: If the topology has not implemented this method
 
     Returns:
         The z parameters in ohms over frequency
