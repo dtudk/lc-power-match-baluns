@@ -20,11 +20,12 @@
 
 from __future__ import annotations
 import math
+from abc import ABC, abstractmethod
 from collections import abc
 import numpy as np
 from multimethod import multimethod
 
-class SimpleLosslessOnePort:
+class SimpleLosslessOnePort(ABC):
   """Represents either an inductor or a capacitor"""
 
   prefix: str = ""
@@ -65,28 +66,26 @@ class SimpleLosslessOnePort:
     Args:
         frequency (float): The frequency to calculate the reactance at in Hertz
 
-    Raises:
-        NotImplementedError: If the element has not implemented this method
-
     Returns:
         float: The element reactance in Ohms
     """
-    raise NotImplementedError
+    reactance = self.calculate_reactance([frequency])
+    return reactance[0]
   
+  @abstractmethod
   @multimethod
   def calculate_reactance(self, frequency: abc.Sequence[float]) -> abc.Sequence[float]: # pylint: disable=function-redefined
     """Calculates the reactance of this element over a range of frequencies
 
     Args:
         frequency (abc.Sequence): The frequencies to calculate the reactance at in Hertz
-
-    Raises:
-        NotImplementedError: If the element has not implemented this method
+    
+    Note: If q is a sequence, it is assumed that it has the same length as frequency.
 
     Returns:
         float: The element reactance in Ohms over frequency
     """
-    raise NotImplementedError
+    pass
   
   @multimethod
   def calculate_impedance(self, frequency: float, q: float | int = np.inf) -> complex:
@@ -96,14 +95,13 @@ class SimpleLosslessOnePort:
         frequency (float): The frequency to calculate the reactance at in Hertz
         q (float, optional): The Q-factor of the element. Defaults to np.inf (lossless).
 
-    Raises:
-        NotImplementedError: If the element has not implemented this method
-
     Returns:
         complex: The element impedance in Ohms
     """
-    raise NotImplementedError
+    impedance = self.calculate_impedance([frequency], q)
+    return impedance[0]
 
+  @abstractmethod
   @multimethod
   def calculate_impedance(self, frequency: abc.Sequence[float], q: abc.Sequence[float | int] | float | int = np.inf) -> abc.Sequence[complex]: # pylint: disable=function-redefined
     """Calculates the impedance of this element over a range of frequencies
@@ -112,14 +110,13 @@ class SimpleLosslessOnePort:
         frequency (abc.Sequence[float]): The frequencies to calculate the impedance at in Hertz
         q (abc.Sequence[float] | float, optional): The Q-factor of the element over frequency.
             If a float is given, Q-factor is constant over frequency. Defaults to np.inf (lossless).
-
-    Raises:
-        NotImplementedError: If the element has not implemented this method
+    
+    Note: If q is a sequence, it is assumed that it has the same length as frequency.
 
     Returns:
         abc.Sequence[complex]: The element impedance in Ohms over frequency
     """
-    raise NotImplementedError
+    pass
 
   @classmethod
   def from_reactance_at_frequency(cls, reactance: float, frequency: float, index: int) -> SimpleLosslessOnePort:
@@ -160,22 +157,10 @@ class Capacitor(SimpleLosslessOnePort):
   prefix: str = "C"
 
   unit: str = "F"
-
-  @multimethod
-  def calculate_reactance(self, frequency: float) -> float:
-    reactance = self.calculate_reactance([frequency])
-    return reactance[0]
   
-  @multimethod
   def calculate_reactance(self, frequency: abc.Sequence[float]) -> abc.Sequence[float]: # pylint: disable=function-redefined
     return -1 / (2 * math.pi * np.array(frequency) * self.value)
-  
-  @multimethod
-  def calculate_impedance(self, frequency: float, q: float | int = np.inf) -> complex:
-    impedance = self.calculate_impedance([frequency], q)
-    return impedance[0]
 
-  @multimethod
   def calculate_impedance(self, frequency: abc.Sequence[float], q: abc.Sequence[float | int] | float | int = np.inf) -> abc.Sequence[complex]: # pylint: disable=function-redefined
     if isinstance(q, float):
       q = q * np.ones_like(frequency)
@@ -195,25 +180,11 @@ class Inductor(SimpleLosslessOnePort):
 
   unit: str = "H"
   
-  @multimethod
-  def calculate_reactance(self, frequency: float) -> float:
-    reactance = self.calculate_reactance([frequency])
-    return reactance[0]
-  
-  @multimethod
   def calculate_reactance(self, frequency: abc.Sequence[float]) -> abc.Sequence[float]: # pylint: disable=function-redefined
     return 2 * math.pi * np.array(frequency) * self.value
-  
-  @multimethod
-  def calculate_impedance(self, frequency: float, q: float | int = np.inf) -> complex:
-    impedance = self.calculate_impedance([frequency], q)
-    return impedance[0]
 
-  @multimethod
   def calculate_impedance(self, frequency: abc.Sequence[float], q: abc.Sequence[float | int] | float | int = np.inf) -> abc.Sequence[complex]: # pylint: disable=function-redefined
     reactance = self.calculate_reactance(frequency)
-    if reactance == 0.0:
-      return np.zeros_like(frequency)
     if isinstance(q, float):
       q = q * np.ones_like(frequency)
     susceptance = -1.0 / reactance
