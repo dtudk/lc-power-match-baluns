@@ -30,10 +30,6 @@ class SimpleLosslessOnePort(ABC):
 
   prefix: str = ""
 
-  index: int | None = None
-
-  value: float = 0
-
   unit: str = ""
 
   @property
@@ -162,6 +158,20 @@ class Capacitor(SimpleLosslessOnePort):
     return -1 / (2 * math.pi * np.array(frequency) * self.value)
 
   def calculate_impedance(self, frequency: abc.Sequence[float], q: abc.Sequence[float | int] | float | int = np.inf) -> abc.Sequence[complex]: # pylint: disable=function-redefined
+    """Calculates the impedance of an capacitor over a range of frequencies
+
+    Args:
+        frequency (abc.Sequence[float]): The frequencies to calculate the impedance at in Hertz
+        q (abc.Sequence[float] | float, optional): The Q-factor of the capacitor over frequency.
+            If a float is given, Q-factor is constant over frequency. Defaults to np.inf (lossless).
+    
+    Note: If q is a sequence, it is assumed that it has the same length as frequency.
+
+    Note: Lossy capacitors are modelled as series RC circuits.
+
+    Returns:
+        abc.Sequence[complex]: The capacitor impedance in Ohms over frequency
+    """
     if isinstance(q, float):
       q = q * np.ones_like(frequency)
     reactance = self.calculate_reactance(frequency)
@@ -184,6 +194,20 @@ class Inductor(SimpleLosslessOnePort):
     return 2 * math.pi * np.array(frequency) * self.value
 
   def calculate_impedance(self, frequency: abc.Sequence[float], q: abc.Sequence[float | int] | float | int = np.inf) -> abc.Sequence[complex]: # pylint: disable=function-redefined
+    """Calculates the impedance of an inductor over a range of frequencies
+
+    Args:
+        frequency (abc.Sequence[float]): The frequencies to calculate the impedance at in Hertz
+        q (abc.Sequence[float] | float, optional): The Q-factor of the inductor over frequency.
+            If a float is given, Q-factor is constant over frequency. Defaults to np.inf (lossless).
+    
+    Note: If q is a sequence, it is assumed that it has the same length as frequency.
+
+    Note: Lossy inductors are modelled as parallel RL circuits.
+
+    Returns:
+        abc.Sequence[complex]: The inductor impedance in Ohms over frequency
+    """
     reactance = self.calculate_reactance(frequency)
     if isinstance(q, float):
       q = q * np.ones_like(frequency)
