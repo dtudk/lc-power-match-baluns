@@ -48,5 +48,7 @@
 
   "version": "2.0.0",
 
-  "language": "eng"
+  "language": "eng",
+
+  "related_identifiers": [{"relation": "isSupplementTo", "identifier":"10.1017/S1759078724000722", "resource_type": "publication"}]
 }

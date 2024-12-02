@@ -26,7 +26,8 @@ Notebooks relating to the derivation procedure for the baluns are located in the
 Data and notebooks relating to the experimental verification of the baluns are located in the `experiment` directory.
 
 ## Authors and acknowledgment
-This repository was created by Rasmus Jepsen for the Technical University of Denmark (DTU) to supplement the research article "Four-Element LC-Baluns for Power Matching Arbitrary Impedances" by Rasmus Jepsen, Jan Henrik Ardenkjær-Larsen, and Vitaliy Zhurbenko (submitted).
+This repository was created by Rasmus Jepsen for the Technical University of Denmark (DTU) to supplement the research article:
+> R. A. Jepsen, J. H. Ardenkjær-Larsen, and V. Zhurbenko, “Four-element LC-baluns for power matching arbitrary impedances,” International Journal of Microwave and Wireless Technologies, pp. 1–9, 2024. [doi:10.1017/S1759078724000722](https://doi.org/10.1017/S1759078724000722)
 
 This project has received funding from the European Research Council (ERC) under the European Union’s Horizon 2020 research and innovation programme (grant agreement No 856432).
 
