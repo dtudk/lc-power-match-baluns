@@ -21,6 +21,7 @@
 import lcapy
 import sympy
 import lc_power_match_baluns.oneport
+from abc import ABC, abstractmethod
 from collections import abc
 import math
 import numpy as np
@@ -28,7 +29,7 @@ import skrf
 from multimethod import multimethod
 
 class BalunTopology:
-  """A power matching LC-balun topology"""
+  """An LC-balun topology"""
 
   name: str = ""
 
@@ -370,11 +371,16 @@ class BalunTopology:
     """
     return lcapy.Circuit(cls.lc_netlist(components))
   
+class PowerMatchingBalunTopology(ABC, BalunTopology):
+  """A power matching LC-balun topology"""
+
   @classmethod
+  @abstractmethod
   def _calculate_elements_from_impedances(cls, rb: float, xb: float, ru: float, xu: float) -> abc.Sequence[tuple[float, ...]]:
     raise NotImplementedError
 
   @classmethod
+  @abstractmethod
   def calculate_elements_from_impedances(cls, zb: complex, zu: complex) -> abc.Sequence[tuple[float, ...]]:
     """Calculates element reactances from impedances at each port for power matching and common-mode rejection
 
@@ -391,7 +397,7 @@ class BalunTopology:
     rb, xb, ru, xu = zb.real, zb.imag, zu.real, zu.imag
     return cls._calculate_elements_from_impedances(rb, xb, ru, xu)
 
-class ExtendedTTopology(BalunTopology):
+class ExtendedTTopology(PowerMatchingBalunTopology):
   """Extended T balun topology for matching complex impedances.
   Fritz et al. [1] have previously considered an equivalent topology and its design equations.
   The design equations that have been used are those derived in the derivations folder independently.
@@ -426,7 +432,7 @@ class ExtendedTTopology(BalunTopology):
     x4_2 = zb / 2 * math.sqrt(ru / rb)
     return [(x1_1, x2_1, x3_1, x4_1), (x1_2, x2_2, x3_2, x4_2)]
   
-class ExtendedPiTopology(BalunTopology):
+class ExtendedPiTopology(PowerMatchingBalunTopology):
   """Extended Pi balun topology for matching complex impedances.
   Bradley and Frank [2] have previously considered a special case of this topology.
   The design equations that have been used are those derived in the derivations folder independently.
@@ -464,7 +470,7 @@ class ExtendedPiTopology(BalunTopology):
     x4_2 = -zb / 2 * math.sqrt(ru / rb) # pylint: disable=invalid-unary-operand-type
     return [(x1_1, x2_1, x3_1, x4_1), (x1_2, x2_2, x3_2, x4_2)]
 
-class LatticeTopology(BalunTopology):
+class LatticeTopology(PowerMatchingBalunTopology):
   """Generalized lattice balun topology for matching complex impedances.
   Symmetric lattice baluns have previously been used for real-real matching [3],
   though they require extra elements if used for complex impedance matching.
@@ -510,7 +516,7 @@ class LatticeTopology(BalunTopology):
     x4 = -zb * math.sqrt(ru / rb)
     return [(x1, x2, x3, x4)]
 
-class DipperTopology(BalunTopology):
+class DipperTopology(PowerMatchingBalunTopology):
   name = "Dipper"
 
   netlist = """
@@ -559,7 +565,7 @@ W 0 0_1; down=0.1, ground
     x4_2 = float(np.float64(ru * zb2 / rb ** 2 * factor) / (xb + 4 * xu - 4 * ru * xb / rb - math.sqrt(rb * delta / ru)) - xu - ru * xb / rb)
     return [(x1_1, x2_1, x3_1, x4_1), (x1_2, x2_2, x3_2, x4_2)]
 
-class YuTopology(BalunTopology):
+class YuTopology(PowerMatchingBalunTopology):
   name = "Yu"
 
   netlist = """
@@ -604,7 +610,7 @@ class YuTopology(BalunTopology):
     x4_2 = -(rb * xu + math.sqrt(ru * rb * delta)) / denominator
     return [(x1_1, x2_1, x3_1, x4_1), (x1_2, x2_2, x3_2, x4_2)]
   
-class ReverseYuTopology(BalunTopology):
+class ReverseYuTopology(PowerMatchingBalunTopology):
   name = "Reverse Yu"
 
   netlist = """
@@ -648,7 +654,7 @@ class ReverseYuTopology(BalunTopology):
     x4_2 = (2 * ru * xb - math.sqrt(ru * rb * delta)) / 2 / denominator
     return [(x1_1, x2_1, x3_1, x4_1), (x1_2, x2_2, x3_2, x4_2)]
   
-class TraditionalLatticeTopology(BalunTopology):
+class TraditionalLatticeTopology(PowerMatchingBalunTopology):
   """The lattice topology from [3] extended with three elements to enable it to power match complex impedances.
 
   [3] C Lorenz AG, "Circuit arrangement for the transition from a symmetrical electrical arrangement to an asymmetrical one, in particular in the case of high-frequency arrangements," Germany Patent 603 816, April 1, 1932. [Online]. Available: https://patents.google.com/patent/DE603816C/en
