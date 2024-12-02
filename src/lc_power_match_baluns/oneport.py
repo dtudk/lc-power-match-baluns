@@ -167,16 +167,18 @@ class Capacitor(SimpleLosslessOnePort):
     
     Note: If q is a sequence, it is assumed that it has the same length as frequency.
 
-    Note: Lossy capacitors are modelled as series RC circuits.
+    Note: Lossy capacitors are modelled as parallel RC circuits.
 
     Returns:
         abc.Sequence[complex]: The capacitor impedance in Ohms over frequency
     """
+    reactance = self.calculate_reactance(frequency)
     if isinstance(q, float):
       q = q * np.ones_like(frequency)
-    reactance = self.calculate_reactance(frequency)
-    resistance = -reactance / np.array(q)
-    return resistance + reactance * 1.0j
+    susceptance = -1.0 / reactance
+    conductance = susceptance / np.array(q)
+    admittance = conductance + susceptance * 1.0j
+    return 1.0 / admittance
   
   @classmethod
   def from_reactance_at_frequency(cls, reactance: float,
@@ -203,18 +205,16 @@ class Inductor(SimpleLosslessOnePort):
     
     Note: If q is a sequence, it is assumed that it has the same length as frequency.
 
-    Note: Lossy inductors are modelled as parallel RL circuits.
+    Note: Lossy inductors are modelled as series RL circuits.
 
     Returns:
         abc.Sequence[complex]: The inductor impedance in Ohms over frequency
     """
-    reactance = self.calculate_reactance(frequency)
     if isinstance(q, float):
       q = q * np.ones_like(frequency)
-    susceptance = -1.0 / reactance
-    conductance = -susceptance / np.array(q)
-    admittance = conductance + susceptance * 1.0j
-    return 1.0 / admittance
+    reactance = self.calculate_reactance(frequency)
+    resistance = reactance / np.array(q)
+    return resistance + reactance * 1.0j
   
   @classmethod
   def from_reactance_at_frequency(cls, reactance: float,
